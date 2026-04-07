@@ -1,0 +1,407 @@
+{% extends "base.html" %}
+{% block title %}Report #{{ report.id }} — Aurora{% endblock %}
+
+{% block content %}
+<style>
+  /* ── Report meta row ─────────────────────────────────────────── */
+  .report-meta-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .report-meta-text { font-size: 0.8rem; color: var(--muted); }
+
+  /* ── Summary stats bar ───────────────────────────────────────── */
+  .summary-stats {
+    display: flex;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+  }
+
+  .summary-stats .stat-value { font-size: 1.3rem; }
+  .summary-stats small { font-size: 0.7rem; font-weight: 400; color: var(--muted); }
+
+  /* ── Chart card ──────────────────────────────────────────────── */
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .chart-header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .chart-title { font-size: 0.875rem; font-weight: 600; color: var(--text); }
+  .chart-subtitle { font-size: 0.75rem; color: var(--muted); }
+  .chart-body { padding: 1.25rem 1.25rem 1rem; }
+
+  /* ── Charts grid ─────────────────────────────────────────────── */
+  .charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  /* ── Briefing card ───────────────────────────────────────────── */
+  .briefing-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .briefing-card .section-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin-bottom: 0.6rem;
+  }
+
+  .briefing-text {
+    font-size: 0.9rem;
+    line-height: 1.75;
+  }
+
+  /* ── Flare list ──────────────────────────────────────────────── */
+  .flare-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .flare-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--border);
+    border-radius: var(--radius);
+    border-left-color: var(--flare-color, var(--border));
+    padding: 1rem 1.25rem;
+  }
+
+  .flare-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .flare-class {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--flare-color, var(--text));
+  }
+
+  /* ── Mini stats ──────────────────────────────────────────────── */
+  .mini-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.45rem;
+  }
+
+  .mini-stat {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.45rem 0.65rem;
+  }
+
+  .mini-stat .stat-label { font-size: .63rem; display: block; margin-bottom: 2px; }
+  .mini-stat .stat-value { font-size: .875rem; font-weight: 600; line-height: 1.3; }
+
+  /* ── Section header ──────────────────────────────────────────── */
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .section-title { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.01em; }
+  .section-meta  { font-size: 0.8rem; color: var(--muted); }
+
+  /* ── Responsive ──────────────────────────────────────────────── */
+  @media (max-width: 640px) {
+    .charts-grid { grid-template-columns: 1fr; }
+    .mini-stats  { grid-template-columns: repeat(2, 1fr); }
+    .summary-stats .stat-chip { min-width: 80px; }
+  }
+</style>
+
+<a href="/" class="back-link">&larr; All Reports</a>
+
+{# ── Page header ──────────────────────────────────────────────── #}
+<div class="page-header">
+  <h1 class="page-title">Space Weather Report</h1>
+</div>
+
+<div class="report-meta-row">
+  <span class="badge badge-{{ report.status | lower }}">{{ report.status }}</span>
+  <span class="badge badge-meta">{{ report.days_requested }}d window</span>
+  <span class="report-meta-text">
+    Report #{{ report.id }}
+    · {{ report.created_at[:16].replace('T',' ') }} UTC
+  </span>
+</div>
+
+{# ── Summary stat chips ───────────────────────────────────────── #}
+<div class="summary-stats">
+  <div class="stat-chip">
+    <span class="stat-label">Severity</span>
+    <span class="stat-value" style="color:
+      {% if report.severity_score <= 3 %}var(--quiet)
+      {% elif report.severity_score <= 5 %}var(--unsettled)
+      {% elif report.severity_score <= 7 %}var(--storm)
+      {% else %}var(--severe){% endif %};">
+      {{ report.severity_score | int }}<small>/10</small>
+    </span>
+  </div>
+  <div class="stat-chip">
+    <span class="stat-label">Max Kp</span>
+    <span class="stat-value" style="color:var(--accent);">{{ stats.kp_max }}</span>
+  </div>
+  <div class="stat-chip">
+    <span class="stat-label">Avg Kp</span>
+    <span class="stat-value">{{ stats.kp_avg }}</span>
+  </div>
+  <div class="stat-chip">
+    <span class="stat-label">Max Wind</span>
+    <span class="stat-value">{{ stats.wind_max }}<small> km/s</small></span>
+  </div>
+  <div class="stat-chip">
+    <span class="stat-label">Avg Wind</span>
+    <span class="stat-value">{{ stats.wind_avg }}<small> km/s</small></span>
+  </div>
+  <div class="stat-chip">
+    <span class="stat-label">Avg Density</span>
+    <span class="stat-value">{{ stats.density_avg }}<small> p/cm³</small></span>
+  </div>
+</div>
+
+{# ── AI briefing ──────────────────────────────────────────────── #}
+<div class="briefing-card">
+  <div class="section-label">AI Briefing · Claude Haiku</div>
+  <p class="briefing-text">{{ report.briefing }}</p>
+  <div style="margin-top:.85rem;">
+    <div class="score-bar-row">
+      <span style="font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);">Severity</span>
+      <div class="score-bar-track" style="flex:1;">
+        <div class="score-bar-fill" style="width:{{ (report.severity_score / 10 * 100) | int }}%;"></div>
+      </div>
+      <span class="score-label" style="color:
+        {% if report.severity_score <= 3 %}var(--quiet)
+        {% elif report.severity_score <= 5 %}var(--unsettled)
+        {% elif report.severity_score <= 7 %}var(--storm)
+        {% else %}var(--severe){% endif %};">
+        {{ report.severity_score | int }}/10
+      </span>
+    </div>
+  </div>
+</div>
+
+{# ── Charts ───────────────────────────────────────────────────── #}
+<div class="charts-grid">
+  <div class="chart-card">
+    <div class="chart-header">
+      <span class="chart-title">Kp Index</span>
+      <span class="chart-subtitle">3-hourly NOAA Kp readings (0–9) · dashed = storm thresholds</span>
+    </div>
+    <div class="chart-body">
+      <canvas id="kpChart" height="110"></canvas>
+    </div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-header">
+      <span class="chart-title">Solar Wind Speed</span>
+      <span class="chart-subtitle">Propagated ACE/DSCOVR solar wind · km/s</span>
+    </div>
+    <div class="chart-body">
+      <canvas id="windChart" height="110"></canvas>
+    </div>
+  </div>
+</div>
+
+{# ── Solar flare events ───────────────────────────────────────── #}
+<div class="section-header">
+  <h2 class="section-title">Solar Flare Events</h2>
+  {% if flares %}<span class="section-meta">{{ flares | length }} detected (C-class and above)</span>{% endif %}
+</div>
+
+{% if not flares %}
+<div class="empty-state" style="padding: 3rem 2rem;">
+  <span class="empty-icon">☀️</span>
+  <h2>No significant flares</h2>
+  <p>No C-class or stronger flares were detected in this report window.</p>
+</div>
+
+{% else %}
+<div class="flare-list">
+  {% for f in flares %}
+  {% set letter = f.flare_class[0] | upper if f.flare_class else 'C' %}
+  <div class="flare-card" style="--flare-color:
+    {% if letter == 'X' %}var(--severe)
+    {% elif letter == 'M' %}var(--storm)
+    {% else %}var(--unsettled){% endif %};">
+
+    <div class="flare-card-header">
+      <div style="display:flex; align-items:center; gap:.75rem;">
+        <span class="flare-class">{{ f.flare_class or '—' }}</span>
+        {% if letter == 'X' %}
+          <span class="badge badge-severe">Extreme</span>
+        {% elif letter == 'M' %}
+          <span class="badge badge-storm">Strong</span>
+        {% else %}
+          <span class="badge badge-unsettled">Moderate</span>
+        {% endif %}
+      </div>
+      {% if f.max_flux %}
+        <span style="font-size:.75rem; color:var(--muted);">
+          Peak flux {{ '%.2e' | format(f.max_flux) }} W/m²
+        </span>
+      {% endif %}
+    </div>
+
+    <div class="mini-stats">
+      <div class="mini-stat">
+        <span class="stat-label">Begin</span>
+        <span class="stat-value">{{ f.begin_time or '—' }}</span>
+      </div>
+      <div class="mini-stat">
+        <span class="stat-label">Peak</span>
+        <span class="stat-value">{{ f.peak_time or '—' }}</span>
+      </div>
+      <div class="mini-stat">
+        <span class="stat-label">End</span>
+        <span class="stat-value">{{ f.end_time or '—' }}</span>
+      </div>
+      <div class="mini-stat">
+        <span class="stat-label">Class</span>
+        <span class="stat-value" style="color:var(--flare-color);">{{ f.flare_class or '—' }}</span>
+      </div>
+    </div>
+
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+  // Show "Apr 5" on first reading of each day, "HH:MM" otherwise
+  function dateAwareLabels(labels) {
+    return labels.map((l, i) => {
+      const date = l.slice(0, 10);
+      const time = l.slice(11, 16);
+      const prev = i > 0 ? labels[i - 1].slice(0, 10) : null;
+      if (i === 0 || date !== prev) {
+        const d = new Date(date + 'T00:00:00Z');
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+      }
+      return time;
+    });
+  }
+
+  function makeChart(id, labels, values, color, yMax, yTitle, thresholds) {
+    const ctx  = document.getElementById(id).getContext('2d');
+    const grad = ctx.createLinearGradient(0, 0, 0, 260);
+    grad.addColorStop(0, color.replace(')', ',0.2)').replace('rgb(', 'rgba('));
+    grad.addColorStop(1, color.replace(')', ',0.01)').replace('rgb(', 'rgba('));
+
+    const axisLabels = dateAwareLabels(labels);
+    const n = labels.length;
+
+    const datasets = [{
+      label: yTitle,
+      data: values,
+      borderColor: color,
+      backgroundColor: grad,
+      borderWidth: 2,
+      pointRadius: 0,
+      fill: true,
+      tension: 0.3,
+      spanGaps: true,
+      order: 1,
+    }];
+
+    (thresholds || []).forEach(t => datasets.push({
+      label: t.label,
+      data: new Array(n).fill(t.value),
+      borderColor: t.color,
+      borderWidth: 1,
+      borderDash: [5, 4],
+      pointRadius: 0,
+      fill: false,
+      order: 2,
+    }));
+
+    new Chart(ctx, {
+      type: 'line',
+      data: { labels: axisLabels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: {
+          x: {
+            ticks: { color: '#7a94aa', maxTicksLimit: 10, font: { size: 10 } },
+            grid:  { color: 'rgba(36,48,64,.6)' },
+            title: { display: true, text: 'Date / Time (UTC)', color: '#7a94aa', font: { size: 10 } },
+          },
+          y: {
+            min: 0,
+            ...(yMax ? { max: yMax } : {}),
+            ticks: { color: '#7a94aa', font: { size: 10 } },
+            grid:  { color: 'rgba(36,48,64,.6)' },
+            title: { display: true, text: yTitle, color: '#7a94aa', font: { size: 10 } },
+          }
+        },
+        plugins: {
+          legend: {
+            display: !!(thresholds && thresholds.length),
+            labels: { color: '#7a94aa', font: { size: 10 }, boxWidth: 20, padding: 12 }
+          },
+          tooltip: {
+            backgroundColor: '#111820',
+            borderColor: '#243040',
+            borderWidth: 1,
+            titleColor: '#dde6f0',
+            bodyColor: color,
+            callbacks: {
+              title: items => labels[items[0].dataIndex]
+                ? labels[items[0].dataIndex].replace('T', ' ') + ' UTC' : '',
+              label: ctx => ctx.datasetIndex === 0
+                ? ` ${yTitle}: ${ctx.parsed.y}` : null,
+            }
+          }
+        }
+      }
+    });
+  }
+
+  const kpThresholds = [
+    { label: 'G1 Minor Storm (Kp 5)', value: 5, color: 'rgba(251,191,36,0.45)' },
+    { label: 'G3 Strong Storm (Kp 7)', value: 7, color: 'rgba(249,115,22,0.45)' },
+  ];
+
+  makeChart('kpChart',   {{ chart_labels | safe }}, {{ chart_values | safe }}, 'rgb(52,211,153)',   9,    'Kp Index',      kpThresholds);
+  makeChart('windChart', {{ wind_labels  | safe }}, {{ wind_speeds  | safe }}, 'rgb(167,139,250)', null, 'Speed (km/s)',   null);
+})();
+</script>
+
+{% endblock %}

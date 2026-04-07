@@ -1,0 +1,437 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Aurora{% endblock %}
+
+{% block content %}
+<style>
+  /* ── Dashboard stats row ─────────────────────────────────────── */
+  .dash-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .dash-stats .stat-chip { padding: 1rem 1.25rem; }
+  .dash-stats .stat-value { font-size: 1.6rem; }
+
+  /* ── Current conditions card ─────────────────────────────────── */
+  .conditions-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .conditions-status { min-width: 180px; }
+
+  .conditions-score {
+    font-size: 3rem;
+    font-weight: 700;
+    line-height: 1;
+    margin: 0.5rem 0;
+  }
+
+  .conditions-score small {
+    font-size: 1.1rem;
+    font-weight: 400;
+    color: var(--muted);
+  }
+
+  .conditions-briefing {
+    flex: 1;
+    min-width: 260px;
+  }
+
+  .section-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+  }
+
+  .briefing-text {
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: var(--text);
+  }
+
+  /* ── Chart card ──────────────────────────────────────────────── */
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+  }
+
+  .chart-header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .chart-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .chart-subtitle { font-size: 0.75rem; color: var(--muted); }
+  .chart-body { padding: 1.25rem 1.25rem 1rem; }
+
+  /* ── Section header ──────────────────────────────────────────── */
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .section-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .section-meta { font-size: 0.8rem; color: var(--muted); }
+
+  /* ── Report grid ─────────────────────────────────────────────── */
+  .report-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+  }
+
+  .report-card {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    color: var(--text);
+    text-decoration: none;
+    transition: border-color .15s, background .15s, transform .15s;
+  }
+
+  .report-card:hover {
+    border-color: var(--accent);
+    background: var(--surface-alt);
+    transform: translateY(-2px);
+    text-decoration: none;
+    color: var(--text);
+  }
+
+  .report-card-date {
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .report-card-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+  }
+
+  .report-card-stats .stat-chip {
+    padding: 0.5rem 0.6rem;
+    min-width: unset;
+    align-items: center;
+    text-align: center;
+  }
+
+  .report-card-stats .stat-value { font-size: 1.05rem; }
+
+  .report-card-footer {
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.75rem;
+  }
+
+  .report-card-footer .timestamp { color: var(--muted); }
+  .report-card-footer .view-link  { color: var(--accent); }
+
+  /* ── Responsive ──────────────────────────────────────────────── */
+  @media (max-width: 640px) {
+    .dash-stats { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+
+{# ── Aggregate stats across all reports ──────────────────────── #}
+{% set total_reports = reports | length %}
+{% set max_kp    = reports | map(attribute='severity_score') | max if reports else 0 %}
+
+{# ── Page header ──────────────────────────────────────────────── #}
+<div class="page-header">
+  <h1 class="page-title">Space Weather Dashboard</h1>
+  <p class="page-subtitle">Real-time conditions from NOAA SWPC · Briefings by Claude Haiku</p>
+</div>
+
+{# ── Stats row ────────────────────────────────────────────────── #}
+<div class="dash-stats">
+  <div class="stat-chip">
+    <span class="stat-label">Reports</span>
+    <span class="stat-value">{{ total_reports }}</span>
+  </div>
+  <div class="stat-chip">
+    <span class="stat-label">Latest Status</span>
+    <span class="stat-value" style="font-size:1.1rem; padding-top:4px;">
+      {% if latest %}
+        <span class="badge badge-{{ latest.status | lower }}">{{ latest.status }}</span>
+      {% else %}—{% endif %}
+    </span>
+  </div>
+  <div class="stat-chip">
+    <span class="stat-label">Latest Severity</span>
+    <span class="stat-value" style="color:
+      {% if latest and latest.severity_score <= 3 %}var(--quiet)
+      {% elif latest and latest.severity_score <= 5 %}var(--unsettled)
+      {% elif latest and latest.severity_score <= 7 %}var(--storm)
+      {% elif latest %}var(--severe)
+      {% else %}var(--muted){% endif %};">
+      {% if latest %}{{ latest.severity_score | int }}<small style="font-size:.8rem;font-weight:400;color:var(--muted);">/10</small>{% else %}—{% endif %}
+    </span>
+  </div>
+  <div class="stat-chip">
+    <span class="stat-label">Peak Score (All)</span>
+    <span class="stat-value" style="color:
+      {% if max_kp <= 3 %}var(--quiet)
+      {% elif max_kp <= 5 %}var(--unsettled)
+      {% elif max_kp <= 7 %}var(--storm)
+      {% else %}var(--severe){% endif %};">
+      {% if reports %}{{ max_kp | int }}<small style="font-size:.8rem;font-weight:400;color:var(--muted);">/10</small>{% else %}—{% endif %}
+    </span>
+  </div>
+</div>
+
+{# ── Current conditions ───────────────────────────────────────── #}
+{% if latest %}
+<div class="conditions-card">
+
+  <div class="conditions-status">
+    <div class="section-label">Current Conditions</div>
+    <span class="badge badge-{{ latest.status | lower }}">{{ latest.status }}</span>
+    <div class="conditions-score" style="color:
+      {% if latest.severity_score <= 3 %}var(--quiet)
+      {% elif latest.severity_score <= 5 %}var(--unsettled)
+      {% elif latest.severity_score <= 7 %}var(--storm)
+      {% else %}var(--severe){% endif %};">
+      {{ latest.severity_score | int }}<small>/10</small>
+    </div>
+    <div class="score-bar-row" style="margin-top:.5rem;">
+      <div class="score-bar-track">
+        <div class="score-bar-fill" style="width:{{ (latest.severity_score / 10 * 100) | int }}%;"></div>
+      </div>
+    </div>
+    <div style="font-size:.75rem; color:var(--muted); margin-top:.6rem;">
+      Report #{{ latest.id }} · {{ latest.created_at[:16].replace('T',' ') }} UTC
+    </div>
+  </div>
+
+  <div class="conditions-briefing">
+    <div class="section-label">AI Briefing</div>
+    <p class="briefing-text">{{ latest.briefing }}</p>
+    <div style="margin-top:.85rem;">
+      <a href="/report/{{ latest.id }}" style="font-size:.85rem;">View full report &rarr;</a>
+    </div>
+  </div>
+
+</div>
+{% endif %}
+
+{# ── Kp chart ─────────────────────────────────────────────────── #}
+{% if chart_values != '[]' %}
+<div class="chart-card">
+  <div class="chart-header">
+    <span class="chart-title">Kp Index</span>
+    <span class="chart-subtitle">Geomagnetic disturbance index (0–9) · dashed lines mark G1 and G3 storm thresholds</span>
+  </div>
+  <div class="chart-body">
+    <canvas id="kpChart" height="70"></canvas>
+  </div>
+</div>
+{% endif %}
+
+{# ── Reports section ──────────────────────────────────────────── #}
+<div class="section-header">
+  <h2 class="section-title">Reports</h2>
+  {% if reports %}<span class="section-meta">{{ total_reports }} on record</span>{% endif %}
+</div>
+
+{% if not reports %}
+<div class="empty-state">
+  <span class="empty-icon">🛰️</span>
+  <h2>No reports yet</h2>
+  <p>Run the monitor to fetch live space weather data and generate your first report.</p>
+  <code>python aurora.py</code>
+</div>
+
+{% else %}
+<div class="report-grid">
+  {% for r in reports %}
+  <a href="/report/{{ r.id }}" class="report-card">
+
+    <div>
+      <div class="report-date-range" style="font-size:1.05rem;font-weight:700;">
+        {{ r.created_at[:10] }}
+      </div>
+      <div style="margin-top:.4rem;">
+        <span class="badge badge-{{ r.status | lower }}">{{ r.status }}</span>
+        <span class="badge badge-meta">{{ r.days_requested }}d window</span>
+      </div>
+    </div>
+
+    <div class="report-card-stats">
+      <div class="stat-chip">
+        <span class="stat-label">Severity</span>
+        <span class="stat-value" style="color:
+          {% if r.severity_score <= 3 %}var(--quiet)
+          {% elif r.severity_score <= 5 %}var(--unsettled)
+          {% elif r.severity_score <= 7 %}var(--storm)
+          {% else %}var(--severe){% endif %};">
+          {{ r.severity_score | int }}<small style="font-size:.7rem;font-weight:400;color:var(--muted);">/10</small>
+        </span>
+      </div>
+      <div class="stat-chip">
+        <span class="stat-label">Status</span>
+        <span class="stat-value" style="font-size:.85rem;">{{ r.status }}</span>
+      </div>
+      <div class="stat-chip">
+        <span class="stat-label">Report</span>
+        <span class="stat-value" style="color:var(--muted);font-size:1rem;">#{{ r.id }}</span>
+      </div>
+    </div>
+
+    <div class="report-card-footer">
+      <span class="timestamp">{{ r.created_at[:16].replace('T',' ') }} UTC</span>
+      <span class="view-link">Details &rarr;</span>
+    </div>
+
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if chart_values != '[]' %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+  const labels = {{ chart_labels | safe }};
+  const values = {{ chart_values | safe }};
+  const n = labels.length;
+
+  // Show "Apr 5" when the day changes, "03:00" otherwise
+  const axisLabels = labels.map((l, i) => {
+    const date = l.slice(0, 10);
+    const time = l.slice(11, 16);
+    const prevDate = i > 0 ? labels[i - 1].slice(0, 10) : null;
+    if (i === 0 || date !== prevDate) {
+      const d = new Date(date + 'T00:00:00Z');
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+    }
+    return time;
+  });
+
+  const ctx  = document.getElementById('kpChart').getContext('2d');
+  const grad = ctx.createLinearGradient(0, 0, 0, 200);
+  grad.addColorStop(0, 'rgba(52,211,153,0.2)');
+  grad.addColorStop(1, 'rgba(52,211,153,0.01)');
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: axisLabels,
+      datasets: [
+        {
+          label: 'Kp Index',
+          data: values,
+          borderColor: '#34d399',
+          backgroundColor: grad,
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: true,
+          tension: 0.3,
+          order: 1,
+        },
+        {
+          label: 'G1 Minor Storm (Kp 5)',
+          data: new Array(n).fill(5),
+          borderColor: 'rgba(251,191,36,0.45)',
+          borderWidth: 1,
+          borderDash: [5, 4],
+          pointRadius: 0,
+          fill: false,
+          order: 2,
+        },
+        {
+          label: 'G3 Strong Storm (Kp 7)',
+          data: new Array(n).fill(7),
+          borderColor: 'rgba(249,115,22,0.45)',
+          borderWidth: 1,
+          borderDash: [5, 4],
+          pointRadius: 0,
+          fill: false,
+          order: 2,
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      scales: {
+        x: {
+          ticks: { color: '#7a94aa', maxTicksLimit: 14, font: { size: 10 } },
+          grid:  { color: 'rgba(36,48,64,.6)' },
+          title: { display: true, text: 'Date / Time (UTC)', color: '#7a94aa', font: { size: 10 } },
+        },
+        y: {
+          min: 0, max: 9,
+          ticks: { color: '#7a94aa', font: { size: 10 }, stepSize: 1 },
+          grid:  { color: 'rgba(36,48,64,.6)' },
+          title: { display: true, text: 'Kp Index', color: '#7a94aa', font: { size: 10 } },
+        }
+      },
+      plugins: {
+        legend: {
+          display: true,
+          labels: {
+            color: '#7a94aa',
+            font: { size: 10 },
+            boxWidth: 20,
+            padding: 14,
+            filter: item => item.datasetIndex === 0 || true,
+          }
+        },
+        tooltip: {
+          backgroundColor: '#111820',
+          borderColor: '#243040',
+          borderWidth: 1,
+          titleColor: '#dde6f0',
+          bodyColor: '#34d399',
+          callbacks: {
+            title: items => labels[items[0].dataIndex] ? labels[items[0].dataIndex].replace('T', ' ') + ' UTC' : '',
+            label: ctx => ctx.datasetIndex === 0 ? ` Kp: ${ctx.parsed.y}` : null,
+          }
+        }
+      }
+    }
+  });
+})();
+</script>
+{% endif %}
+
+{% endblock %}

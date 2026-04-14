@@ -1,4 +1,4 @@
-# Aurora — Space Weather Monitor
+# Aurora - Space Weather Monitor
 
 A real-time space weather monitoring app that pulls live data from NOAA's Space Weather Prediction Center, generates an AI-written briefing and severity score via Claude Haiku, and displays everything in a dark-themed Flask dashboard.
 

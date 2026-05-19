@@ -1,17 +1,16 @@
 # Aurora - Space Weather Monitor
 
-A real-time space weather monitoring app that pulls live data from NOAA's Space Weather Prediction Center, generates an AI-written briefing and severity score via Claude Haiku, and displays everything in a dark-themed Flask dashboard.
+A real-time space weather monitoring app that pulls live data from NOAA's Space Weather Prediction Center, generates an AI-written briefing and severity score via Gemini, and stores everything in a local SQLite database.
 
 ---
 
 ## Features
 
 - **Live NOAA data** — Kp index (geomagnetic activity), solar wind speed/density, and solar flare detection from GOES X-ray flux
-- **AI briefings** — Claude Haiku summarizes each report in plain English and assigns a 1–10 severity score
+- **AI briefings** — Gemini summarizes each report in plain English and assigns a 1–10 severity score
 - **Status classification** — Quiet / Unsettled / Storm / Severe based on severity score
-- **Historical charts** — Kp index and solar wind speed visualized with Chart.js
 - **SQLite storage** — every report, flare event, and reading is persisted locally
-- **CLI + Web UI** — run reports on demand from the terminal, browse them in the browser
+- **CLI** — run reports on demand from the terminal
 
 ---
 
@@ -19,13 +18,8 @@ A real-time space weather monitoring app that pulls live data from NOAA's Space 
 
 ```
 Aurora/
-├── aurora.py         # CLI — fetches NOAA data, calls Claude, saves to DB
-├── app.py            # Flask web server
+├── aurora.py         # CLI — fetches NOAA data, calls Gemini, saves to DB
 ├── db.py             # SQLite database layer
-├── templates/
-│   ├── base.html     # Dark theme base layout
-│   ├── dashboard.html
-│   └── report.html
 ├── requirements.txt
 ├── .env.example
 └── .gitignore
@@ -36,7 +30,7 @@ Aurora/
 ## Prerequisites
 
 - Python 3.10+
-- An [Anthropic API key](https://console.anthropic.com/)
+- A [Google Gemini API key](https://aistudio.google.com/)
 
 ---
 
@@ -56,7 +50,7 @@ pip install -r requirements.txt
 
 # 4. Configure your API key
 cp .env.example .env
-# Edit .env and add your Anthropic API key
+# Edit .env and add your Gemini API key (GEMINI_API_KEY)
 ```
 
 ---
@@ -84,14 +78,6 @@ Output example:
   mostly quiet to unsettled...
 ============================================================
 ```
-
-### Start the web dashboard
-
-```bash
-python app.py
-```
-
-Then open [http://127.0.0.1:5000](http://127.0.0.1:5000).
 
 ---
 
@@ -124,4 +110,4 @@ Solar flare events are detected from the raw X-ray flux time series: contiguous 
 
 | Variable | Description |
 |---|---|
-| `ANTHROPIC_API_KEY` | Your Anthropic API key (required) |
+| `GEMINI_API_KEY` | Your Google Gemini API key (required) |

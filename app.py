@@ -479,13 +479,13 @@ with tab_kp:
             color_discrete_sequence=['#a855f7']
         )
         
-        # Color storm level band (Kp >= 5 is minor storm and above)
-        fig_kp.add_hrect(
-            y0=5, y1=9, 
-            line_width=0, 
-            fillcolor="#ef4444", 
-            opacity=0.12, 
-            annotation_text="Storm Warning threshold (Kp ≥ 5)", 
+        # Draw storm threshold line (Kp >= 5 is minor storm and above)
+        fig_kp.add_hline(
+            y=5, 
+            line_dash="dash",
+            line_color="#ef4444", 
+            line_width=1.5, 
+            annotation_text="Storm Threshold (Kp ≥ 5)", 
             annotation_position="top left",
             annotation_font_color="#ef4444",
             annotation_font_family="Space Grotesk"

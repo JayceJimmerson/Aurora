@@ -451,11 +451,13 @@ def style_plotly_layout(fig, title, y_label):
             tickfont=dict(family='Outfit', size=11, color='#94a3b8')
         ),
         yaxis=dict(
-            title=y_label,
+            title=dict(
+                text=y_label,
+                font=dict(family='Space Grotesk', size=12, color='#94a3b8')
+            ),
             gridcolor='rgba(255, 255, 255, 0.05)',
             linecolor='rgba(255, 255, 255, 0.1)',
-            tickfont=dict(family='Outfit', size=11, color='#94a3b8'),
-            titlefont=dict(family='Space Grotesk', size=12, color='#94a3b8')
+            tickfont=dict(family='Outfit', size=11, color='#94a3b8')
         ),
         hoverlabel=dict(
             bgcolor='#0f172a',

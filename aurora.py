@@ -2,11 +2,11 @@
 """
 Aurora - Space Weather Monitor
 CLI entry point. Fetches real-time data from NOAA SWPC and generates
-an AI briefing via Claude Haiku.
+an AI briefing via Gemini.
 
 Usage:
-    python sentinel.py
-    python sentinel.py --days 3
+    python aurora.py
+    python aurora.py --days 3
 """
 
 import argparse
@@ -15,7 +15,7 @@ import sys
 from datetime import datetime, timedelta, timezone
 
 import requests
-import anthropic
+from google import genai
 from dotenv import load_dotenv
 
 import db
@@ -235,7 +235,7 @@ def classify_flares(flares):
 # ---------------------------------------------------------------------------
 
 def generate_briefing(days, kp_stats, wind_stats, flare_counts, flares):
-    client = anthropic.Anthropic()
+    client = genai.Client()
 
     notable_flares = [f for f in flares if f['flare_class'] and f['flare_class'][0].upper() in ('X', 'M')]
     flare_lines = '\n'.join(
@@ -263,14 +263,13 @@ Respond in this exact JSON format (no markdown, no extra text):
   "severity_score": <integer 1-10>
 }}"""
 
-    print("  Generating AI briefing via Claude Haiku...")
-    message = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=512,
-        messages=[{"role": "user", "content": prompt}]
+    print("  Generating AI briefing via Gemini...")
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=prompt,
     )
 
-    text = message.content[0].text.strip()
+    text = response.text.strip()
     # Strip markdown code fences if model wrapped it anyway
     if text.startswith('```'):
         text = text.split('```')[1]
@@ -323,7 +322,7 @@ def run(days):
 
     try:
         briefing, score = generate_briefing(days, kp_stats, wind_stats, flare_counts, flares)
-    except (anthropic.APIError, json.JSONDecodeError, KeyError) as e:
+    except (Exception) as e:
         print(f"\nError generating briefing: {e}", file=sys.stderr)
         sys.exit(1)
 

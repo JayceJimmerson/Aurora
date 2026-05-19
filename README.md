@@ -10,7 +10,7 @@ A real-time space weather monitoring app that pulls live data from NOAA's Space 
 - **AI briefings** — Gemini summarizes each report in plain English and assigns a 1–10 severity score
 - **Status classification** — Quiet / Unsettled / Storm / Severe based on severity score
 - **SQLite storage** — every report, flare event, and reading is persisted locally
-- **CLI** — run reports on demand from the terminal
+- **Interactive Dashboard** — configure parameters and run new reports directly from a premium web UI
 
 ---
 
@@ -18,7 +18,8 @@ A real-time space weather monitoring app that pulls live data from NOAA's Space 
 
 ```
 Aurora/
-├── aurora.py         # CLI — fetches NOAA data, calls Gemini, saves to DB
+├── app.py            # Streamlit frontend - beautiful dashboard and report controls
+├── aurora.py         # Core pipeline - fetches NOAA telemetry, calls Gemini AI
 ├── db.py             # SQLite database layer
 ├── requirements.txt
 ├── .env.example
@@ -57,27 +58,28 @@ cp .env.example .env
 
 ## Usage
 
-### Generate a report (CLI)
+### Start the Streamlit Dashboard
+
+Run the following command to start the interactive space weather cockpit:
 
 ```bash
-python aurora.py              # pulls last 1 day of data
-python aurora.py --days 3     # pulls last 3 days
-python aurora.py --days 7     # pulls last 7 days (NOAA max)
+streamlit run app.py
 ```
 
-Output example:
-```
-============================================================
-  REPORT #1 — 2026-04-07 22:13 UTC
-  Status: Quiet  |  Severity: 2/10
-  Max Kp: 3.67   |  Avg Wind: 513.4 km/s
-  Flares — X:0 M:1 C:21
+This will automatically launch the dashboard in your default browser at `http://localhost:8501`.
 
-  Briefing:
-  Space weather conditions over the past three days have remained
-  mostly quiet to unsettled...
-============================================================
-```
+### Generating Space Weather Reports
+
+1. Open the sidebar panel on the left.
+2. Select your **Observation Window (Days)** using the slider (choose between 1 and 7 days).
+3. Click the **Generate New Report** button.
+4. Watch the real-time pipeline status as it pulls telemetry from NOAA and summarizes the briefing using Gemini AI.
+5. The dashboard will automatically refresh and focus on your new report once complete!
+
+### Navigating Historical Briefings
+
+Use the **Historical Briefings** dropdown selector in the sidebar to review past generated reports, including full telemetry graphs and solar flare logs saved in the local SQLite database.
+
 
 ---
 

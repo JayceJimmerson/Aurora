@@ -9,7 +9,6 @@ Usage:
     python aurora.py --days 3
 """
 
-import argparse
 import json
 import sys
 from datetime import datetime, timedelta, timezone
@@ -339,29 +338,18 @@ def run(days):
     print(f"  Status: {status}  |  Severity: {score}/10")
     print(f"  Max Kp: {kp_stats['max']}  |  Avg Wind: {wind_stats['avg_speed']} km/s")
     print(f"  Flares — X:{flare_counts['X']} M:{flare_counts['M']} C:{flare_counts['C']}")
-    print(f"\n  Briefing:\n  {briefing}")
+    print(f"  Briefing:\n  {briefing}")
     print(f"{'='*60}\n")
+    return report_id
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description='Aurora — Space Weather Monitor CLI',
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=__doc__
-    )
-    parser.add_argument(
-        '--days', type=int, default=1, metavar='N',
-        help='Number of days of history to pull (default: 1, max useful: 7)'
-    )
-    args = parser.parse_args()
-
-    if args.days < 1:
-        parser.error("--days must be at least 1")
-    if args.days > 30:
-        print("Warning: NOAA endpoints typically only hold 1–7 days of real-time data; "
-              "limiting to 7 days for flare events.", file=sys.stderr)
-
-    run(args.days)
+    print("\n" + "="*60)
+    print("Aurora: Terminal report execution is deprecated.")
+    print("Please use the Streamlit web dashboard to configure and run reports.")
+    print("\nTo start the dashboard, run:")
+    print("  streamlit run app.py")
+    print("="*60 + "\n")
 
 
 if __name__ == '__main__':
